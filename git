@@ -1,0 +1,17 @@
+#!/bin/bash
+
+TODOTXT_VERBOSE=0
+
+action=$1
+shift
+
+[ "$action" = "usage" ] && {
+    echo "    $(basename $0) [ARGS]"
+    echo "      Run git in \$TODO_DIR. Pass all arguments to git."
+    exit
+}
+
+$TODO_FULL_SH archive
+
+cd "$TODO_DIR"
+git "$@"
