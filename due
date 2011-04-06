@@ -23,6 +23,7 @@ def	parsedate(text):
 
 	return d
 
+
 def list(args, due=date.today()):
 	command = TODO_SH+' ls '+' '.join(args)
 	p = os.popen(command, 'r')
@@ -36,11 +37,11 @@ def list(args, due=date.today()):
 				print line.rstrip()
 	p.close()
 
+
 def set(item, date):
 	date = str(parsedate(date))
-	command = TODO_SH+" append "+item
-	command += " d:"+date
 	
+	#
 	i = 0
 	text = ""
 	fh = open(TODO_TXT, 'r')
@@ -49,6 +50,7 @@ def set(item, date):
 		if i == int(item):
 			text = line.strip()
 
+	# 
 	if re.search(DATE_PAT, text):
 		text = re.sub(DATE_PAT, '', text)
 		text = re.sub('^[0-9]* ', '', text)   # remove line number
@@ -58,10 +60,28 @@ def set(item, date):
 	else:
 		command = TODO_SH+" append "+item+" d:"+date
 	
+	#
 	return not os.system(command)
 
+
 def unset(item):
-	pass
+	i = 0
+	text = ""
+	fh = open(TODO_TXT, 'r')
+	for line in fh:
+		i += 1
+		if i == int(item):
+			text = line.strip()
+
+	if re.search(DATE_PATH, text):
+		text = re.sub(DATE_PAT, '', text)
+		text = re.sub('^[0-9]* ', '', text)   # remove line number
+		text = re.sub('^\([A-Z]\)* ', '', text) # remove priority
+		text = text.strip()
+		command = TODO_SH+' replace '+item+' "'+text+'" d:'+date
+		return not os.system(command)
+	return True
+
 
 def usage():
 	print """
