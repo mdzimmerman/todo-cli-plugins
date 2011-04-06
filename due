@@ -3,6 +3,7 @@
 import os
 import sys
 import re
+import getopt
 from datetime import *
 import dateutil.parser
 from dateutil.relativedelta import *
@@ -24,7 +25,8 @@ def	parsedate(text):
 	return d
 
 
-def list(args, due=date.today()):
+def list(args, due="today"):
+	due=parsedate(due)
 	command = TODO_SH+' ls '+' '.join(args)
 	p = os.popen(command, 'r')
 	for line in p:
@@ -99,12 +101,18 @@ if __name__ == "__main__":
 	#print "command="+command
 	#print "args="+','.join(args)
 
+	duedate="today"
+	opts,args = getopt.getopt(args, 'd:')
+	for o, a in opts:
+		if o == '-d':
+			duedate = a
+
 	if command == 'usage':
 		usage()
 	elif command == "":
-		list([])
+		list([], "today")
 	elif command == 'list' or command == 'ls':
-		list(args)
+		list(args, duedate)
 	elif command == 'set':
 		if len(args) != 2:
 			usage()
