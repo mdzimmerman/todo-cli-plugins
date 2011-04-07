@@ -12,7 +12,29 @@ TODO_SH=os.environ['TODO_FULL_SH']
 TODO_TXT=os.environ['TODO_FILE']
 DATE_PAT=re.compile(r"d:(\d{4})-(\d{2})-(\d{2})")
 
+def find_item_text(item):
+	"""Find the text of the todo.txt line with number 'item'."""
+	i = 0
+	text = ""
+	fh = open(TODO_TXT, 'r')
+	for line in fh:
+		i += 1
+		if i == int(item):
+			text = line.strip()
+			break
+	return text
+
+
+def clear_metadata(text):
+	"""Remove the line number, priority and other metadata from a todo line."""
+	text = re.sub('^[0-9]* ', '', text)   # remove line number
+	text = re.sub('^\([A-Z]\)* ', '', text) # remove priority
+	text = text.strip()
+	return text
+
+
 def	parsedate(text):
+	"""Take a textual representation of a string and turn it into a date() object."""
 	if text == 'today':
 		d=date.today()
 	elif text == 'tomorrow':
@@ -21,7 +43,6 @@ def	parsedate(text):
 		d=date.today()+relativedelta(days=-1)
 	else:
 		d=dateutil.parser.parse(text, fuzzy=True).date()
-
 	return d
 
 
@@ -42,22 +63,12 @@ def list(args, due="today"):
 
 def set(item, date):
 	date = str(parsedate(date))
-	
-	#
-	i = 0
-	text = ""
-	fh = open(TODO_TXT, 'r')
-	for line in fh:
-		i += 1
-		if i == int(item):
-			text = line.strip()
+	text = find_item_text(item)
 
 	# 
 	if re.search(DATE_PAT, text):
 		text = re.sub(DATE_PAT, '', text)
-		text = re.sub('^[0-9]* ', '', text)   # remove line number
-		text = re.sub('^\([A-Z]\)* ', '', text) # remove priority
-		text = text.strip()
+		text = clear_metadata(text)
 		command = TODO_SH+' replace '+item+' "'+text+'" d:'+date
 	else:
 		command = TODO_SH+" append "+item+" d:"+date
@@ -67,35 +78,28 @@ def set(item, date):
 
 
 def unset(item):
-	i = 0
-	text = ""
-	fh = open(TODO_TXT, 'r')
-	for line in fh:
-		i += 1
-		if i == int(item):
-			text = line.strip()
+	text = find_item_text(item)
 
 	if re.search(DATE_PATH, text):
 		text = re.sub(DATE_PAT, '', text)
-		text = re.sub('^[0-9]* ', '', text)   # remove line number
-		text = re.sub('^\([A-Z]\)* ', '', text) # remove priority
-		text = text.strip()
+		text = clear_metadata(text)
 		command = TODO_SH+' replace '+item+' "'+text+'" d:'+date
 		return not os.system(command)
 	return True
 
 
 def usage():
-	print """
- due COMMAND ARGS
-     
-     due list ARGS_FOR_LIST
-     due set #ITEM DUE_DATE 
-     due unset #ITEM
+	print """  due <COMMAND> ARGS
+      Manage the due dates for commands.
+
+      due list [-d <DUE_DATE>] ...
+      due set <#ITEM> <DUE_DATE> 
+      due unset <#ITEM>
 """
 
 if __name__ == "__main__":
 	command=""
+	if (len(sys.argv) == 2): command=sys.argv[1]
 	if (len(sys.argv) > 2): command=sys.argv[2]
 	args = sys.argv[3:]
 	#print "command="+command
