@@ -6,8 +6,9 @@ action=$1
 shift
 
 [ "$action" = "usage" ] && {
-    echo "    $(basename $0) [ARGS]"
+    echo "  $(basename $0) [ARGS]"
     echo "      Run git in \$TODO_DIR. Pass all arguments to git."
+	echo ""
     exit
 }
 

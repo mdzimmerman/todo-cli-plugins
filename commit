@@ -4,8 +4,8 @@ action=$1
 shift
 
 function usage {
-	echo " $(basename $0)"
-	echo " Record all changes in Git repository located at $TODO_DIR."
+	echo "  $(basename $0)"
+	echo "      Record all changes in Git repository located at $TODO_DIR."
 	echo ""
 	exit
 }
