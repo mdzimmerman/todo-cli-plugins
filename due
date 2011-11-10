@@ -116,6 +116,11 @@ def summary(args, ndays=7):
 		print "--- "+text+" ---"
 		list(args, dueOn=d)
 		print
+
+	print "--- due later ---";
+	d = today + relativedelta(days=ndays-1)
+	text = d.strftime("%A %d %b")
+	list(args, dueAfter=d)
 	
 
 def unset(item):
