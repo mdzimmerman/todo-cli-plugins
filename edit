@@ -1,6 +1,8 @@
 #!/bin/bash
 # 2009 Matt Brubeck
 # License:  GPL, http://www.gnu.org/copyleft/gpl.html
+EDITOR=gvim
+
 case $1 in
 "usage")
   echo "  $(basename $0) [BASENAME]"
