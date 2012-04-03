@@ -194,5 +194,7 @@ if __name__ == "__main__":
 			usage()
 			sys.exit(2)
 		unset(args[0])
+	else:
+		summary([command])
 	
 
