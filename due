@@ -59,14 +59,19 @@ def	parsedate(text):
 
 
 def list(args, dueOn="today", dueBefore=False, dueAfter=False):
+	"""List all items that match the specified date ranges."""
 	
 	# parse arguments
 	dueOnDate = False
 	dueBeforeDate = False
 	dueAfterDate = False
-	if dueOn: dueOnDate = parsedate(dueOn)
+	if dueOn == 'none' or dueOn == 'never':
+		dueOnDate = 'never'
+	elif dueOn: 
+		dueOnDate = parsedate(dueOn)
 	if dueBefore: dueBeforeDate = parsedate(dueBefore)
 	if dueAfter: dueAfterDate = parsedate(dueAfter)
+
 
 	# read the output of 'todo.sh list' and grep it
 	command = TODO_SH+' ls '+' '.join(args)
@@ -84,8 +89,11 @@ def list(args, dueOn="today", dueBefore=False, dueAfter=False):
 					if d < dueAfterDate: continue
 				print line.rstrip()
 			else:
-				if d == dueOnDate:
+				if dueOnDate != 'never' and d == dueOnDate:
 					print line.rstrip()
+		else:
+			if dueOnDate == 'never':
+				print line.rstrip()
 	p.close()
 
 
@@ -127,7 +135,10 @@ def summary(args, ndays=7):
 	d = today + relativedelta(days=ndays-1)
 	text = d.strftime("%A %d %b")
 	list(args, dueAfter=d)
-	
+	print
+
+	print "--- no due date---"
+	list(args, dueOn="never")
 
 def unset(item):
 	"""Unset the due date on the todo line with item number 'item'."""
