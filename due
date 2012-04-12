@@ -39,6 +39,7 @@ DATE_PAT=re.compile(r"d:(\d{4})-(\d{2})-(\d{2})")
 
 def find_item_text(item):
 	"""Find the text of the todo.txt line with number 'item'."""
+	
 	i = 0
 	text = ""
 	fh = open(TODO_TXT, 'r')
@@ -52,10 +53,23 @@ def find_item_text(item):
 
 def clear_metadata(text):
 	"""Remove the line number, priority and other metadata from a todo line."""
+	
 	text = re.sub('^[0-9]* ', '', text)   # remove line number
 	text = re.sub('^\([A-Z]\)* ', '', text) # remove priority
 	text = text.strip()
 	return text
+
+def get_todo_data(args):
+	"""Invoke 'todo.sh ls' with the arguments in args and make a list of the results."""
+	
+	items = []
+	command = TODO_SH+' ls '+' '.join(args)
+	p = os.popen(command, 'r')
+	for line in p:
+		line = line.strip()
+		items.append(line)
+	p.close()
+	return items
 
 
 def	parsedate(text):
@@ -77,7 +91,7 @@ def	parsedate(text):
 	return d
 
 
-def list(args, dueOn="today", dueBefore=False, dueAfter=False):
+def list(args, dueOn="today", dueBefore=False, dueAfter=False, items=False):
 	"""List all items that match the specified date ranges."""
 	
 	# parse arguments
@@ -93,10 +107,12 @@ def list(args, dueOn="today", dueBefore=False, dueAfter=False):
 
 
 	# read the output of 'todo.sh list' and grep it
-	command = TODO_SH+' ls '+' '.join(args)
-	p = os.popen(command, 'r')
-	for line in p:
-		line=line.strip()
+	if items:
+		pass
+	else:
+		items=get_todo_data(args)
+	
+	for line in items:
 		match = re.search(DATE_PAT, line)
 		if match:
 			m = match.groups()
@@ -106,14 +122,13 @@ def list(args, dueOn="today", dueBefore=False, dueAfter=False):
 					if d > dueBeforeDate: continue
 				if dueAfterDate:
 					if d < dueAfterDate: continue
-				print line.rstrip()
+				print line
 			else:
 				if dueOnDate != 'never' and d == dueOnDate:
-					print line.rstrip()
+					print line
 		else:
 			if dueOnDate == 'never':
-				print line.rstrip()
-	p.close()
+				print line
 
 
 def set(item, date):
@@ -134,11 +149,13 @@ def set(item, date):
 	return not os.system(command)
 
 
-def summary(args, ndays=7):
-	"""XXX"""
+def summary(args, ndays=7, showDueLater=True, showNoDue=True):
+	"""Generate a summary of all items matching <args> due in the next <ndays> days"""
+
+	items=get_todo_data(args)
 
 	print "--- overdue ---";
-	list(args, dueBefore="yesterday")
+	list(args, dueBefore="yesterday", items=items)
 	print
 
 	today = date.today()
@@ -147,17 +164,19 @@ def summary(args, ndays=7):
 		text = d.strftime("%A %d %b")
 		if n == 0: text += " (today)"
 		print "--- "+text+" ---"
-		list(args, dueOn=d)
+		list(args, dueOn=d, items=items)
 		print
 
-	print "--- due later ---";
-	d = today + relativedelta(days=ndays-1)
-	text = d.strftime("%A %d %b")
-	list(args, dueAfter=d)
-	print
+	if showDueLater:
+		print "--- due later ---";
+		d = today + relativedelta(days=ndays-1)
+		text = d.strftime("%A %d %b")
+		list(args, dueAfter=d, items=items)
+		print
 
-	print "--- no due date---"
-	list(args, dueOn="never")
+	if showNoDue:
+		print "--- no due date---"
+		list(args, dueOn="never", items=items)
 
 def unset(item):
 	"""Unset the due date on the todo line with item number 'item'."""
@@ -172,48 +191,76 @@ def unset(item):
 
 
 def usage():
-	print """  due <COMMAND> ARGS
-      Manage the due dates for commands.
+	print """  due [<OPTS>] <COMMAND> [<SEARCH_STRING>]
+      Manage the due dates of items in todo.txt. These are written
+	  in the form "d:1969-12-31" anywhere in the text of the item. 
 
-      due list [-d <DUE_DATE>] ...
-      due set <#ITEM> <DUE_DATE> 
-      due unset <#ITEM>
+      Options:
+          -d <DATE>    Specify a different date for 'list' ["today"]
+          -n <NDAYS>   Specify number of days to summarize [7]
+          -x           Also summarize items without a due date
+      
+      Commands:
+          due summary [<SEARCH_STRING>]
+              Print a summary of all items due in the next week
+              (or <NDAYS>).
+          due list [<SEARCH_STRING]
+              List overdue items and items due today (or all items due
+              on or before "-d <DATE>").
+          due set <#ITEM> <DUE_DATE> 
+              Set the due date of item numbered <#ITEM>.
+          due unset <#ITEM>
+              Unset (remove) the due date of item numbered <#ITEM>.
+          due usage|help
+              Show this help message.
 """
 
 if __name__ == "__main__":
-	# process commands 
-	command=""
-	if (len(sys.argv) == 2 and sys.argv[1] == 'usage'): command='usage'
-	if (len(sys.argv) > 2): command=sys.argv[2]
-	args = sys.argv[3:]
+	# ignore args passed to todo.sh itself
+	if sys.argv[1] == 'due':
+		args = sys.argv[2:]
+	else: # todo.sh doesn't pass name of addon itself when invoking "addon usage"
+		args = sys.argv[1:]
 
-	# process options (after the command)
-	duedate="today"
-	opts,args = getopt.getopt(args, 'd:')
+	# process options (before command)
+	duedate = "today"
+	ndays = 7
+	showNoDue = False
+	opts,args = getopt.getopt(args, 'n:xd:')
 	for o, a in opts:
 		if o == '-d':
 			duedate = a
+		elif o == '-n':
+			ndays = int(a)
+		elif o == '-x':
+			showNoDue = True
 
+	# find the command
+	if len(args) > 0:
+		command=args[0]
+	else:
+		command=None
+			
 	# dispatch
-	if command == 'usage':
+	if command == 'usage' or command == 'help' or command == "":
 		usage()
-	elif command == "":
-		summary(args)
 	elif command == 'summary' or command == 'sum':
-		summary(args)
+		summary(args[1:], ndays=ndays, showNoDue=showNoDue)
 	elif command == 'list' or command == 'ls':
-		list(args, dueBefore=duedate)
+		list(args[1:], dueBefore=duedate)
 	elif command == 'set':
+		args=args[1:]
 		if len(args) != 2:
 			usage()
 			sys.exit(1)
 		set(args[0], args[1])
 	elif command == 'unset':
+		args=args[1:]
 		if len(args) != 1:
 			usage()
 			sys.exit(2)
 		unset(args[0])
-	else:
-		summary([command])
+	else: # no command specified, assume args
+		summary(args, ndays=ndays, showNoDue=showNoDue)
 	
 
