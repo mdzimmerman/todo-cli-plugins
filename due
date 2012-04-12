@@ -3,6 +3,7 @@
 # due: todo.sh plugin for managing due dates on tasks.
 #
 # Author: Matthew Zimmerman <matt@triclinic.org>
+# Depends: dateutil (http://labix.org/python-dateutil)
 # License: http://www.opensource.org/licenses/MIT
 #
 # Copyright (c) 2011-2012 by Matthew Zimmerman
