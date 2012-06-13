@@ -198,6 +198,7 @@ def usage():
 
       Options:
           -d <DATE>    Specify a different date for 'list' ["today"]
+          -h           Print this help message
           -n <NDAYS>   Specify number of days to summarize [7]
           -x           Also summarize items without a due date
       
@@ -227,10 +228,13 @@ if __name__ == "__main__":
 	duedate = "today"
 	ndays = 7
 	showNoDue = False
-	opts,args = getopt.getopt(args, 'n:xd:')
+	command = None
+	opts,args = getopt.getopt(args, 'd:hn:x')
 	for o, a in opts:
 		if o == '-d':
 			duedate = a
+		elif o == '-h':
+			command = 'help'
 		elif o == '-n':
 			ndays = int(a)
 		elif o == '-x':
@@ -239,8 +243,6 @@ if __name__ == "__main__":
 	# find the command
 	if len(args) > 0:
 		command=args[0]
-	else:
-		command=None
 			
 	# dispatch
 	if command == 'usage' or command == 'help' or command == "":
